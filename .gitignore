@@ -1,0 +1,17 @@
+# --- DEPENDANCES ---
+node_modules/
+**/node_modules/
+.npm
+package-lock.json # (Optionnel : certains préfèrent le garder, d'autres l'ignorer en projet étudiant pour éviter les conflits d'OS)
+
+# --- BUILD & TEMP ---
+dist/
+build/
+**/dist/
+**/build/
+*.log
+.DS_Store
+
+# --- NODE-RED ---
+**/*.backup
+.config.runtime.json

@@ -1,0 +1,20 @@
+{
+    "name": "my-app",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite --open",
+        "build": "tsc && vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@lit-labs/router": "^0.1.4",
+        "internet-des-objets": "file:..",
+        "lit": "^3.3.1"
+    },
+    "devDependencies": {
+        "typescript": "~5.9.3",
+        "vite": "^7.2.4"
+    }
+}

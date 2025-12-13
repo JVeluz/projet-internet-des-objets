@@ -1,0 +1,19 @@
+{
+    "name": "internet-des-objets",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "install:all": "npm install && npm install --prefix object && npm install --prefix dashboard",
+        "start": "concurrently --kill-others-on-fail --names \"RED,OBJ,WEB\" --prefix-colors \"red,blue,green\" \"npx node-red -u ./node_red\" \"npm run dev --prefix object\" \"npm run dev --prefix dashboard\""
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "devDependencies": {
+        "concurrently": "^9.2.1"
+    },
+    "dependencies": {
+        "node-red": "^4.1.2"
+    }
+}
