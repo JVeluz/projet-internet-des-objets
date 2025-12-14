@@ -1,60 +1,70 @@
 import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { SensorService, type SensorData } from "../services/SensorService";
+
 import "../components/line-chart";
 
-interface SensorData {
+interface SensorState {
     deviceId: string;
     timestamp: string;
-    metrics: { stress: number; heart_rate: number; battery: number; };
+    metrics: {
+        stress: number;
+        heart_rate: number;
+        battery: number;
+    };
     alert: string;
 }
 
 @customElement('home-page')
 export default class HomePage extends LitElement {
 
-    @state()
-    private data: SensorData = {
-        deviceId: "---", timestamp: "--:--:--",
-        metrics: { stress: 0, heart_rate: 0, battery: 0 }, alert: "NONE"
-    };
+    private sensorService = new SensorService();
 
-    private refreshInterval: number | undefined;
+    @state()
+    private sensorState: SensorState = {
+        deviceId: "---",
+        timestamp: "--:--:--",
+        metrics: { stress: 0, heart_rate: 0, battery: 0 },
+        alert: "NONE"
+    };
 
     protected createRenderRoot(): HTMLElement | DocumentFragment { return this; }
 
     connectedCallback() {
         super.connectedCallback();
-        this.refreshInterval = setInterval(() => this.simulateData(), 1000);
-    }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this.refreshInterval) clearInterval(this.refreshInterval);
-    }
+        this.sensorService.onStatusChange((sensorData: SensorData) => {
+            console.log("Donnée reçue dans la Vue :", sensorData);
 
-    private simulateData() {
-        const time = Date.now() / 1000;
-        this.data = {
-            deviceId: "casque_demo_01",
-            timestamp: new Date().toLocaleTimeString(),
-            metrics: {
-                stress: Math.max(0, Math.min(100, Math.round(50 + Math.sin(time) * 20 + (Math.random() - 0.5) * 10))),
-                // On simule un rythme cardiaque un peu différent
-                heart_rate: Math.round(80 + Math.cos(time) * 10 + Math.random() * 5),
-                battery: 85
-            },
-            alert: "NORMAL"
-        };
+            this.sensorState = {
+                deviceId: sensorData.deviceId || "Casque-01",
+                timestamp: sensorData.timestamp ? new Date(sensorData.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString(),
+                metrics: {
+                    stress: sensorData.metrics?.stress || 0,
+                    heart_rate: sensorData.metrics?.heart_rate || 0,
+                    battery: sensorData.metrics?.battery || 0
+                },
+                alert: sensorData.status || "NORMAL"
+            };
+        });
     }
 
     protected render() {
-        const { metrics, deviceId, timestamp } = this.data;
+        const { metrics, deviceId, timestamp, alert } = this.sensorState;
+
+        const statusColor = alert === 'CRITICAL' ? 'red' : 'black';
 
         return html`
             <div style="font-family: sans-serif; padding: 20px;">
-                <h1>Monitor: ${deviceId}</h1>
+                <header style="display:flex; justify-content:space-between; align-items:center;">
+                    <h1>Monitor: ${deviceId}</h1>
+                    <div style="text-align:right;">
+                        <small>Dernière màj : ${timestamp}</small>
+                        <h3 style="color: ${statusColor}; margin:0;">Statut : ${alert}</h3>
+                    </div>
+                </header>
                 
-                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 20px; margin-bottom: 20px; margin-top: 20px;">
                     <div>
                         <h3>Stress</h3>
                         <p style="font-size: 2em; margin: 0;">${metrics.stress}%</p>
@@ -62,6 +72,10 @@ export default class HomePage extends LitElement {
                     <div>
                         <h3>Coeur</h3>
                         <p style="font-size: 2em; margin: 0;">${metrics.heart_rate} BPM</p>
+                    </div>
+                    <div>
+                        <h3>Batterie</h3>
+                        <p style="font-size: 2em; margin: 0;">${metrics.battery}%</p>
                     </div>
                 </div>
 

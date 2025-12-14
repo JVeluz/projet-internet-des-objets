@@ -39,6 +39,12 @@
         "sessionExpiry": ""
     },
     {
+        "id": "a134ec9fced74993",
+        "type": "websocket-listener",
+        "path": "/ws/sensors",
+        "wholemsg": "false"
+    },
+    {
         "id": "c71e408281c3998b",
         "type": "debug",
         "z": "6e04ada28a2e9f82",
@@ -47,11 +53,12 @@
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "false",
+        "complete": "true",
+        "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 400,
-        "y": 300,
+        "x": 460,
+        "y": 160,
         "wires": []
     },
     {
@@ -71,8 +78,20 @@
         "y": 300,
         "wires": [
             [
-                "c71e408281c3998b"
+                "c71e408281c3998b",
+                "219652541378ea1a"
             ]
         ]
+    },
+    {
+        "id": "219652541378ea1a",
+        "type": "websocket out",
+        "z": "6e04ada28a2e9f82",
+        "name": "",
+        "server": "a134ec9fced74993",
+        "client": "",
+        "x": 520,
+        "y": 300,
+        "wires": []
     }
 ]

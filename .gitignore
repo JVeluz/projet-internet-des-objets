@@ -15,3 +15,5 @@ build/
 # --- NODE-RED ---
 **/*.backup
 .config.runtime.json
+
+.env

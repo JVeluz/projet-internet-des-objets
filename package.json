@@ -3,8 +3,8 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "install:all": "npm install && npm install --prefix simulated_thing && npm install --prefix dashboard",
-        "start": "concurrently --kill-others-on-fail --names \"RED,THG,WEB\" --prefix-colors \"red,blue,green\" \"npx node-red -u ./node_red\" \"npm run dev --prefix simulated_thing\" \"npm run dev --prefix dashboard\""
+        "install:all": "npm install && npm install --prefix device && npm install --prefix dashboard",
+        "start": "concurrently --kill-others-on-fail --names \"GTW,DEV,WEB\" --prefix-colors \"red,blue,green\" \"npx node-red -u ./gateway\" \"npm run dev --prefix device\" \"npm run dev --prefix dashboard\""
     },
     "keywords": [],
     "author": "",
@@ -14,6 +14,7 @@
         "concurrently": "^9.2.1"
     },
     "dependencies": {
+        "dotenv": "^17.2.3",
         "node-red": "^4.1.2"
     }
 }
