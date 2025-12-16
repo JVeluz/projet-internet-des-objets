@@ -1,4 +1,4 @@
-import { html, LitElement, type PropertyValues } from "lit";
+import { css, html, LitElement, type PropertyValues } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import Chart from 'chart.js/auto';
 
@@ -13,15 +13,17 @@ export class LineChart extends LitElement {
 
     @query('canvas') private canvasElement!: HTMLCanvasElement;
 
-    private chartInstance: Chart | null = null;
+    private chart: Chart | null = null;
 
     private labelsBuffer: string[] = [];
     private dataBuffer: number[] = [];
 
+    static styles = css`
+        canvas { width: 100%; height: 100%; }
+    `;
+
     protected render() {
-        return html`
-            <canvas></canvas>
-        `;
+        return html`<canvas></canvas>`;
     }
 
     protected firstUpdated() {
@@ -29,13 +31,13 @@ export class LineChart extends LitElement {
     }
 
     protected updated(changedProperties: PropertyValues) {
-        if ((changedProperties.has('value') || changedProperties.has('label')) && this.chartInstance) {
+        if ((changedProperties.has('value') || changedProperties.has('label')) && this.chart) {
             this.addDataPoint(this.label, this.value);
         }
     }
 
     private initChart() {
-        this.chartInstance = new Chart(this.canvasElement, {
+        this.chart = new Chart(this.canvasElement, {
             type: 'line',
             data: {
                 labels: this.labelsBuffer,
@@ -51,7 +53,10 @@ export class LineChart extends LitElement {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: false,
+                animation: {
+                    duration: 800, // Durée en ms (0.8 seconde pour la transition)
+                    easing: 'easeOutQuart' // Effet de lissage (démarre vite, finit doucement)
+                },
                 scales: {
                     y: { beginAtZero: true }
                 }
@@ -60,7 +65,7 @@ export class LineChart extends LitElement {
     }
 
     private addDataPoint(label: string, data: number) {
-        if (!this.chartInstance) return;
+        if (!this.chart) return;
 
         this.labelsBuffer.push(label);
         this.dataBuffer.push(data);
@@ -70,6 +75,6 @@ export class LineChart extends LitElement {
             this.dataBuffer.shift();
         }
 
-        this.chartInstance.update('none');
+        this.chart.update('none');
     }
 }

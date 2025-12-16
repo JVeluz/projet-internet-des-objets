@@ -1,52 +1,28 @@
-import type { SensorPayload } from "../interfaces/SensorPayload";
+import { WS_SENSORS_URL } from "../config";
+import { SocketClient } from "../data/SocketClient";
+import { Observable } from "../data/Observable";
+import { SafetyStatus, type SensorData, type SensorPayload } from "../interfaces/sensor";
 
-type Callback = (data: SensorPayload) => void;
+export class SensorRepository extends Observable<SensorData> {
 
-const URL: string = "ws://127.0.0.1:1880/ws/sensors";
+    private socket = new SocketClient<SensorPayload>(WS_SENSORS_URL);
 
-export class SensorRepository {
+    private state: SensorData = {
+        status: SafetyStatus.NORMAL,
+        metrics: { stress: 0, heart_rate: 0, battery: 0 },
+        deviceId: "---"
+    };
 
-    private static instance: SensorRepository | null = null;
-    private socket: WebSocket | null = null;
-    private subscribers: Callback[] = [];
-
-    public static getInstance(): SensorRepository {
-        if (!SensorRepository.instance) {
-            SensorRepository.instance = new SensorRepository();
-        }
-        return SensorRepository.instance;
-    }
-
-    private constructor() {
-        this.connect();
-    }
-
-    private connect() {
-        console.log(`🔌 Connexion au WebSocket ${URL}...`);
-        this.socket = new WebSocket(URL);
-
-        this.socket.onmessage = (event) => {
-            try {
-                const rawData = JSON.parse(event.data);
-                this.notify(rawData);
-            } catch (e) {
-                console.error("❌ Erreur de parsing JSON dans SensorRepository", e);
+    constructor() {
+        super();
+        this.socket.subscribe((payload) => {
+            this.state.deviceId = payload.deviceId;
+            this.state.timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
+            if (payload.metrics) {
+                this.state.metrics = payload.metrics;
             }
-        };
-
-        this.socket.onopen = () => console.log("✅ WebSocket connecté !");
-
-        this.socket.onclose = () => {
-            console.warn("⚠️ WebSocket coupé. Reconnexion dans 3s...");
-            setTimeout(() => this.connect(), 3000);
-        };
-    }
-
-    public subscribe(callback: Callback) {
-        this.subscribers.push(callback);
-    }
-
-    private notify(data: SensorPayload) {
-        this.subscribers.forEach(callback => callback(data));
+            this.state.status = payload.status || SafetyStatus.NORMAL;
+            this.notify({ ...this.state });
+        });
     }
 }

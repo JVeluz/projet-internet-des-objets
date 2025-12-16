@@ -3,6 +3,7 @@ import mqtt from "mqtt";
 const CLOCK: number = 2000;
 const TOPIC: string = "uppa/jveluz/test";
 const BROKER: string = "mqtt://test.mosquitto.org";
+const DEBUG: boolean = false;
 
 let currentBattery = 100;
 
@@ -65,7 +66,7 @@ function generateData(): Payload {
 }
 
 async function main() {
-    const payload = generateData();
+    const payload: Payload = generateData();
     const message: string = JSON.stringify(payload);
 
     client.publish(TOPIC, message, (error: any) => {
@@ -73,8 +74,10 @@ async function main() {
             console.error("Erreur de publication:", error);
             return;
         }
-        const stress = payload.metrics.stress;
-        const icon = stress > 80 ? '🔴' : (stress > 50 ? '🟠' : '🟢');
-        console.log(`[📤 ENVOI] ${icon} Stress: ${stress}% | ❤️ BPM: ${payload.metrics.heart_rate} | 🔋 Bat: ${payload.metrics.battery}%`);
+        if (DEBUG) {
+            const stress = payload.metrics.stress;
+            const icon = stress > 80 ? '🔴' : (stress > 50 ? '🟠' : '🟢');
+            console.log(`[📤 ENVOI] ${icon} Stress: ${stress}% | ❤️ BPM: ${payload.metrics.heart_rate} | 🔋 Bat: ${payload.metrics.battery}%`);
+        }
     });
 }
