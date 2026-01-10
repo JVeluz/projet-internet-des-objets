@@ -12,6 +12,7 @@
         "ts-node-dev": "^2.0.0"
     },
     "dependencies": {
+        "fast-glob": "^3.3.3",
         "internet-des-objets": "file:..",
         "mqtt": "^5.14.1"
     }
