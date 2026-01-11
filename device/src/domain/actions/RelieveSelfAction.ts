@@ -6,9 +6,7 @@ export class RelieveSelfAction implements IAction {
 
     calculateUtility(state: SimulationState): number {
         if (state.is_sleeping) return 0.0;
-
         const urgency = state.bladder / 100;
-        // on s'en fiche à 50%, mais à 90% c'est la panique
         return Math.pow(urgency, 4);
     }
 

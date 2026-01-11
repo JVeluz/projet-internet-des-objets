@@ -22,3 +22,4 @@ export default class BladderSensor implements ISensor, ICalibratable {
         };
     }
 }
+

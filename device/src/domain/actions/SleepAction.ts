@@ -6,7 +6,7 @@ export class SleepAction implements IAction {
 
     calculateUtility(state: SimulationState): number {
         const fatigue = 1.0 - (state.energy / 100);
-        if (state.is_sleeping)
+        if (state.is_sleeping && state.energy < 80)
             return 1.0
         return Math.pow(fatigue, 3);
     }

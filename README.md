@@ -1,45 +1,65 @@
-# 📡 Projet IoT : Système de Monitoring [Nom de votre projet]
+# 🐕 Cyber-Dog — Simulation Biologique Connectée
 
-**Auteur(s) :** [Vos Noms]
-**Date :** Janvier 2025
-**Cours :** Internet des Objets
+Cyber-Dog est une simulation IoT avancée d’un **chien cyborg**.  
+Le système modélise des processus biologiques (faim, énergie, vessie, stress), simule des **comportements basés sur la théorie de l’utilité**, et utilise une **IA générative** pour transformer les données biométriques en **pensées canines compréhensibles**.
 
----
+## 🧠 Configuration de l’Intelligence Artificielle (optionnel)
 
-## 📝 Description du projet
+Tout fournisseur compatible avec l’API OpenAI peut être utilisé (Groq, OpenAI, Mistral, Ollama, etc.).
 
-Ce projet simule une architecture IoT complète sans matériel physique.
-Il met en œuvre un **[Décrire le scénario, ex: Casque de sécurité connecté pour ouvriers]** qui remonte des données de santé et d'environnement en temps réel.
+Créer un fichier `.env` à la racine du projet.
 
-### Architecture technique
-Le projet est structuré en **Monorepo** (un seul dossier regroupant tous les composants) :
-
-1.  **Simulateur (`/object`)** : Script **Node.js/TypeScript** simulant les capteurs (MQTT). Génère des données réalistes (courbes sinusoïdales, pics d'alerte).
-2.  **Logique (`/node_red`)** : Serveur **Node-RED** embarqué. Traite les données, gère les règles métier et les alertes.
-3.  **Interface (`/dashboard`)** : Application Web (**Vite/Vue/React**) affichant les données en temps réel pour l'opérateur.
+### Exemple Groq
+```ini
+API_URL=https://api.groq.com/openai/v1/chat/completions
+API_KEY=gsk_votre_cle_secrete_ici
+AI_MODEL=llama-3.1-8b-instant
+````
 
 ---
 
 ## 🚀 Installation et Lancement
 
-Le projet a été conçu pour être **"clé en main"**. Il installe automatiquement toutes ses dépendances (Node-RED inclus) au premier lancement.
-
 ### Prérequis
-* **Node.js** (v16 ou supérieur) installé sur la machine.
-* C'est tout !
 
-### 1. Démarrage (Recommandé)
+* Node.js v22+
 
-Lancez simplement le script correspondant à votre système d'exploitation à la racine du dossier :
+### Windows
 
-* **Windows** : Double-cliquez sur `start_windows.bat`
-* **Mac / Linux** : Exécutez `./start_unix.sh` dans un terminal.
+Double-cliquer sur :
 
-> **Note :** Le premier lancement peut prendre 1 à 2 minutes pour l'installation des modules (`node_modules`).
+```
+start_windows.bat
+```
 
-### 2. Accès aux interfaces
+### Linux / macOS
 
-Une fois le script lancé, une console unifiée s'ouvre. Après quelques secondes, votre navigateur devrait s'ouvrir automatiquement. Sinon, voici les liens :
+```bash
+bash ./start_linux_mac.sh
+```
 
-* 📊 **Dashboard de supervision :** [http://localhost:5173](http://localhost:5173)
-* ⚙️ **Node-RED (Flux & Backend) :** [http://localhost:1880](http://localhost:1880)
+Les scripts installent les dépendances et lancent **Device + Gateway + Dashboard**.
+
+---
+
+## 🖥️ Accès aux Interfaces
+
+### Dashboard (principal)
+
+```
+http://localhost:5173/
+```
+
+### Gateway (Node-RED)
+
+```
+http://127.0.0.1:1880/
+```
+
+### Simulation (console)
+
+Dans le terminal :
+
+* Mise à jour des jauges
+* Actions du chien
+* Événements aléatoires

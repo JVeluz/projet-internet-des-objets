@@ -9,11 +9,11 @@ import { AIRepository } from "../data/AIRepository";
 
 import type { DogGlobalState } from "../interfaces/sensor";
 
-// État initial safe pour éviter les erreurs undefined au démarrage
+// État initial
 const INITIAL_STATE: DogGlobalState = {
     heart: { bpm: 70, temperature_c: 38.5, alert_tachycardia: false, alert_fever: false },
     bladder: { pressure_pa: 0, estimated_fill_pct: 0, urgent: false },
-    tail: { frequency_hz: 0, is_happy: false },
+    tail: { frequency_hz: 0, is_happy: false, is_sad: false },
     vision: { detected_object: "NONE" },
     brain: { neural_activity_hz: 10, is_sleeping: false },
     gastric: { stomach_volume_ml: 500, capacity_max: 500, is_hungry: false }
@@ -33,7 +33,6 @@ export default class HomePage extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        // On fusionne le nouvel état avec l'ancien pour garder la cohérence
         this.sensorRepository.subscribe((newState) => {
             this.dogState = { ...this.dogState, ...newState };
         });
@@ -42,7 +41,8 @@ export default class HomePage extends LitElement {
         });
     }
 
-    // --- Calibrations (Inchangées) ---
+    // --- ACTIONS DE CALIBRATION ---
+
     private handleCalibrateHeart() {
         const bpmInput = this.shadowRoot?.getElementById('conf-bpm') as HTMLInputElement;
         const tempInput = this.shadowRoot?.getElementById('conf-temp') as HTMLInputElement;
@@ -66,12 +66,18 @@ export default class HomePage extends LitElement {
     }
 
     private handleCalibrateTail() {
+        // Récupération des 3 paramètres de calibration émotionnelle
         const sensInput = this.shadowRoot?.getElementById('conf-sens') as HTMLInputElement;
-        if (sensInput) {
+        const maxJoyInput = this.shadowRoot?.getElementById('conf-max-joy') as HTMLInputElement;
+        const threshInput = this.shadowRoot?.getElementById('conf-happy-thresh') as HTMLInputElement;
+
+        if (sensInput && maxJoyInput && threshInput) {
             this.sensorRepository.calibrateSensor("dog/sensors/tail", {
-                sensitivity: Number(sensInput.value)
+                sensitivity: Number(sensInput.value),
+                max_joy_hz: Number(maxJoyInput.value),
+                happy_threshold: Number(threshInput.value)
             });
-            alert("✅ Calibration Queue envoyée !");
+            alert("✅ Calibration Émotionnelle (Queue) envoyée !");
         }
     }
 
@@ -85,7 +91,7 @@ export default class HomePage extends LitElement {
         }
     }
 
-    // --- Helpers d'affichage ---
+    // --- HELPERS ---
 
     private getGlobalStatus() {
         const { heart, bladder } = this.dogState;
@@ -104,41 +110,34 @@ export default class HomePage extends LitElement {
     private formatSleepTime(ts?: number) {
         if (!ts) return "--";
         const diffMinutes = Math.floor((Date.now() - ts) / 60000);
-        // if (diffMinutes < 1) return "À l'instant";
         return `Il y a ${diffMinutes} min`;
     }
 
     protected render() {
         const { heart, bladder, tail, vision, brain, gastric } = this.dogState;
-
         const status = this.getGlobalStatus();
         const timestamp = new Date().toLocaleTimeString();
 
-        // Couleurs dynamiques
+        // Couleurs
         const heartColor = heart.alert_tachycardia ? '#ef4444' : '#3b82f6';
         const tempColor = heart.alert_fever ? '#ef4444' : '#06b6d4';
         const brainColor = brain.is_sleeping ? '#6366f1' : '#10b981';
 
-        // Vessie (Plus c'est haut, plus c'est grave)
         let bladderColor = '#10b981';
         if (bladder.estimated_fill_pct > 50) bladderColor = '#f59e0b';
         if (bladder.estimated_fill_pct > 80) bladderColor = '#ef4444';
 
-        // Estomac (Calcul du % de remplissage)
-        // gastric.stomach_volume_ml est le volume actuel.
-        // Si volume = 0 -> Vide (Faim). Si volume = capacity -> Plein.
         const stomachFillPct = (gastric.stomach_volume_ml / gastric.capacity_max) * 100;
-
-        let stomachColor = '#10b981'; // Vert (Plein)
-        if (stomachFillPct < 50) stomachColor = '#f59e0b'; // Orange
-        if (stomachFillPct < 20) stomachColor = '#ef4444'; // Rouge (Faim)
+        let stomachColor = '#10b981';
+        if (stomachFillPct < 50) stomachColor = '#f59e0b';
+        if (stomachFillPct < 20) stomachColor = '#ef4444';
 
         return html`
             <div class="container">
                 
                 <header>
                     <div>
-                        <h1>Cyber-Dog Monitor v2.0</h1>
+                        <h1>Cyber-Dog Monitor</h1>
                         <div class="meta">Système Biologique • MAJ: ${timestamp}</div>
                     </div>
                     <div class="badge status-${status}">
@@ -149,13 +148,12 @@ export default class HomePage extends LitElement {
                 <div class="ai-panel">
                     <div class="ai-avatar">🐕</div>
                     <div class="ai-content">
-                        <h3>Flux de Pensée (Neural Link)</h3>
+                        <h3>Flux de Pensée</h3>
                         <p>« ${this.aiThought} »</p>
                     </div>
                 </div>
 
                 <div class="grid-kpi">
-                    
                     <div class="card">
                         <div class="card-header">Activité Neurale</div>
                         <div class="value-big" style="color: ${brainColor}">
@@ -175,7 +173,6 @@ export default class HomePage extends LitElement {
                         <div class="vision-text">
                             ${this.getVisionIcon(vision.detected_object)} ${vision.detected_object}
                         </div>
-                        
                         ${brain.is_sleeping ? html`
                             <div style="
                                 position: absolute; top:0; left:0; right:0; bottom:0;
@@ -200,31 +197,19 @@ export default class HomePage extends LitElement {
                     </div>
 
                     <div class="card">
-                        <div class="card-header">
-                            Température ${heart.alert_fever ? '🔥' : '🌡️'}
-                        </div>
+                        <div class="card-header">Température ${heart.alert_fever ? '🔥' : '🌡️'}</div>
                         <div class="value-big" style="color: ${tempColor}">
                             ${heart.temperature_c}<span class="unit">°C</span>
-                        </div>
-                        <div style="font-size:0.8rem; color:#9ca3af; margin-top:5px;">
-                            ${heart.alert_fever ? 'Fièvre détectée !' : 'Stable'}
                         </div>
                     </div>
 
                     <div class="card">
-                        <div class="card-header">
-                            Gastrique ${gastric.is_hungry ? '🍗' : '✅'}
-                        </div>
+                        <div class="card-header">Estomac ${gastric.is_hungry ? '🍗' : '✅'}</div>
                         <div class="value-big" style="color: ${stomachColor}">
                             ${gastric.stomach_volume_ml}<span class="unit">mL</span>
                         </div>
-                        
                         <div style="height: 12px; width: 100%; margin-top: 10px;">
-                            <horizontal-bar-chart 
-                                .value=${stomachFillPct} 
-                                .max=${100} 
-                                .color=${stomachColor}
-                            ></horizontal-bar-chart>
+                            <horizontal-bar-chart .value=${stomachFillPct} .max=${100} .color=${stomachColor}></horizontal-bar-chart>
                         </div>
                         <div style="font-size:0.8rem; color:#9ca3af; margin-top:5px;">
                              ${gastric.is_hungry ? 'Besoin calorique' : 'Satiété OK'}
@@ -239,16 +224,18 @@ export default class HomePage extends LitElement {
                         <div style="height: 12px; width: 100%; margin-top: 10px;">
                             <horizontal-bar-chart .value=${bladder.estimated_fill_pct} .max=${100} .color=${bladderColor}></horizontal-bar-chart>
                         </div>
-                        <div style="font-size:0.8rem; color:#9ca3af; margin-top:5px;">
-                            ${bladder.pressure_pa} Pa
-                        </div>
                     </div>
 
                     <div class="card">
-                        <div class="card-header">Queue</div>
+                        <div class="card-header">Queue (Émotion)</div>
                         <div class="value-big">${tail.frequency_hz}<span class="unit">Hz</span></div>
                         <div style="margin-top:5px;">
-                            ${tail.is_happy ? html`<span class="badge" style="background:#d1fae5; color:#065f46">HAPPY</span>` : ''}
+                            ${tail.is_happy
+                ? html`<span class="badge" style="background:#d1fae5; color:#065f46">HAPPY (Joy)</span>`
+                : tail.is_sad
+                    ? html`<span class="badge" style="background:#fee2e2; color:#b91c1c">SAD (Null)</span>`
+                    : html`<span class="badge" style="background:#f3f4f6; color:#4b5563">NEUTRAL</span>`
+            }
                         </div>
                     </div>
                 </div>
@@ -274,6 +261,7 @@ export default class HomePage extends LitElement {
                     </h2>
                     
                     <div class="config-grid">
+                        
                         <div class="config-card">
                             <h4>Biométrie (Heart)</h4>
                             <div class="input-group">
@@ -285,6 +273,23 @@ export default class HomePage extends LitElement {
                                 <input type="number" id="conf-temp" value="39.5" step="0.1">
                             </div>
                             <button class="btn-calibrate" @click=${this.handleCalibrateHeart}>Appliquer</button>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>Accéléromètre (Tail)</h4>
+                            <div class="input-group">
+                                <label>Sensibilité (x)</label>
+                                <input type="number" id="conf-sens" value="1.0" step="0.1">
+                            </div>
+                            <div class="input-group">
+                                <label>Max Joy (Hz à 100%)</label>
+                                <input type="number" id="conf-max-joy" value="5.0" step="0.5">
+                            </div>
+                            <div class="input-group">
+                                <label>Seuil Bonheur (Hz)</label>
+                                <input type="number" id="conf-happy-thresh" value="2.0" step="0.5">
+                            </div>
+                            <button class="btn-calibrate" @click=${this.handleCalibrateTail}>Appliquer</button>
                         </div>
 
                         <div class="config-card">
@@ -305,14 +310,6 @@ export default class HomePage extends LitElement {
                             <button class="btn-calibrate" @click=${this.handleCalibrateBladder}>Appliquer</button>
                         </div>
 
-                        <div class="config-card">
-                            <h4>Accéléromètre (Tail)</h4>
-                            <div class="input-group">
-                                <label>Sensibilité (x)</label>
-                                <input type="number" id="conf-sens" value="1.0" step="0.1">
-                            </div>
-                            <button class="btn-calibrate" @click=${this.handleCalibrateTail}>Appliquer</button>
-                        </div>
                     </div>
                 </div>
 

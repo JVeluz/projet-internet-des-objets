@@ -6,7 +6,7 @@ import Simulation from "./domain/logic/Simulation";
 import UtilityBrain from "./domain/logic/UtilityBrain";
 import MqttClient from "./infrastructure/MqttClient";
 
-const CLOCK: number = 2000;
+const CLOCK: number = 5000;
 
 async function main() {
     console.clear();

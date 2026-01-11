@@ -14,6 +14,7 @@ export interface BladderData {
 export interface TailData {
     frequency_hz: number;
     is_happy: boolean;
+    is_sad: boolean;
 }
 
 export interface VisionData {

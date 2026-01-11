@@ -11,10 +11,9 @@ export class CatAppearanceEvent implements IEvent {
 
     execute(state: SimulationState): void {
         console.log("🐱 ÉVÉNEMENT : Un chat traverse le jardin !");
-
         state.currentVisualStimulus = VisualStimulus.CAT;
-
         state.fun = 100;
         state.currentHeartBeat = 140;
     }
 }
+

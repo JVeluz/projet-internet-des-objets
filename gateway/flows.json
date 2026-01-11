@@ -51,195 +51,6 @@
         "wholemsg": "false"
     },
     {
-        "id": "c71e408281c3998b",
-        "type": "debug",
-        "z": "6e04ada28a2e9f82",
-        "name": "debug 1",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 340,
-        "y": 40,
-        "wires": []
-    },
-    {
-        "id": "efaca0baa2a34fd0",
-        "type": "mqtt in",
-        "z": "6e04ada28a2e9f82",
-        "name": "",
-        "topic": "uppa/jveluz/test",
-        "qos": "2",
-        "datatype": "auto-detect",
-        "broker": "78c2213df8e5b209",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 100,
-        "y": 120,
-        "wires": [
-            [
-                "c71e408281c3998b",
-                "219652541378ea1a",
-                "8ae0654925bae368"
-            ]
-        ]
-    },
-    {
-        "id": "219652541378ea1a",
-        "type": "websocket out",
-        "z": "6e04ada28a2e9f82",
-        "name": "",
-        "server": "a134ec9fced74993",
-        "client": "",
-        "x": 360,
-        "y": 120,
-        "wires": []
-    },
-    {
-        "id": "b1160216447b9597",
-        "type": "http request",
-        "z": "6e04ada28a2e9f82",
-        "name": "",
-        "method": "POST",
-        "ret": "obj",
-        "paytoqs": "ignore",
-        "url": "https://api.groq.com/openai/v1/chat/completions",
-        "tls": "",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 530,
-        "y": 220,
-        "wires": [
-            [
-                "1aec9145b484ea2c"
-            ]
-        ]
-    },
-    {
-        "id": "4519c7daf6095d6d",
-        "type": "websocket out",
-        "z": "6e04ada28a2e9f82",
-        "name": "",
-        "server": "8ef5c20e4e888e47",
-        "client": "",
-        "x": 910,
-        "y": 220,
-        "wires": []
-    },
-    {
-        "id": "8ae0654925bae368",
-        "type": "function",
-        "z": "6e04ada28a2e9f82",
-        "name": "function 1",
-        "func": "// --- 1. CONFIGURATION ---\nconst COOLDOWN = 10000; // Analyse toutes les 10 secondes\nconst WINDOW_SIZE = 30; // Fenêtre d'analyse glissante\nconst now = Date.now();\n\n// --- 2. GESTION DE L'HISTORIQUE (DOSSIER PATIENT) ---\nlet history = context.get('patientHistory') || [];\n\nif (msg.payload.metrics) {\n    history.push({\n        stress: msg.payload.metrics.stress || 0,\n        bpm: msg.payload.metrics.heart_rate || 0,\n        timestamp: now\n    });\n}\n\n// On garde les 30 dernières mesures\nif (history.length > WINDOW_SIZE) {\n    history.shift();\n}\n\ncontext.set('patientHistory', history);\n\n// --- 3. RATE LIMITER ---\nlet lastCheck = context.get('lastGroqCall') || 0;\n\n// On attend d'avoir un peu d'historique (min 5 mesures) et que le temps soit écoulé\nif ((now - lastCheck < COOLDOWN) || (history.length < 5)) {\n    return null;\n}\n\ncontext.set('lastGroqCall', now);\n\n// --- 4. ANALYSE CLINIQUE (PRE-PROCESSING) ---\nlet sumStress = 0;\nlet sumBpm = 0;\nlet minStress = 100;\nlet maxStress = 0;\n\nhistory.forEach(h => {\n    sumStress += h.stress;\n    sumBpm += h.bpm;\n    if (h.stress < minStress) minStress = h.stress;\n    if (h.stress > maxStress) maxStress = h.stress;\n});\n\nconst avgStress = Math.round(sumStress / history.length);\nconst avgBpm = Math.round(sumBpm / history.length);\nconst lastVal = history[history.length - 1];\n\n// Détection de l'évolution de l'état du patient\nlet trend = \"stable\";\nif (lastVal.stress > avgStress + 5) trend = \"agitation en hausse\";\nelse if (lastVal.stress < avgStress - 5) trend = \"apaisement\";\n\n\n// --- 5. ORDONNANCE IA (PROMPT MÉDICAL) ---\nconst apiKey = env.get(\"GROQ_API_KEY\") || \"TA_CLE_GROQ_ICI\";\n\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": \"Bearer \" + apiKey\n};\n\n// On construit un rapport médical concis\nconst clinicalReport = `\nRapport Constantes (30s):\n- Niveau Stress/Douleur Moy: ${avgStress}/100 (Pic à ${maxStress}).\n- Évolution: ${trend}.\n- Fréquence Cardiaque Moy: ${avgBpm} BPM.\n- Batterie Capteur: ${msg.payload.metrics.battery}%.\n`;\n\nmsg.payload = {\n    \"model\": \"llama-3.1-8b-instant\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"Tu es un assistant médical IA pour infirmiers. Analyse les constantes vitales du patient. Donne une action prioritaire ou une observation clinique brève (max 15 mots). Ton ton est professionnel, calme et médical.\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": clinicalReport\n        }\n    ],\n    \"max_tokens\": 60\n};\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 340,
-        "y": 220,
-        "wires": [
-            [
-                "258aaa782e9a4c70",
-                "b1160216447b9597"
-            ]
-        ]
-    },
-    {
-        "id": "1aec9145b484ea2c",
-        "type": "function",
-        "z": "6e04ada28a2e9f82",
-        "name": "function 2",
-        "func": "// On vérifie si Groq a répondu correctement\nif (msg.payload && msg.payload.choices && msg.payload.choices.length > 0) {\n    const adviceText = msg.payload.choices[0].message.content;\n\n    msg.payload = {\n        advice: adviceText,\n        type: \"AI_ADVICE\"\n    };\n\n    return msg;\n}\n\nreturn null;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 720,
-        "y": 220,
-        "wires": [
-            [
-                "4519c7daf6095d6d",
-                "13b3d11c5ab0eabf"
-            ]
-        ]
-    },
-    {
-        "id": "13b3d11c5ab0eabf",
-        "type": "debug",
-        "z": "6e04ada28a2e9f82",
-        "name": "debug 2",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 900,
-        "y": 280,
-        "wires": []
-    },
-    {
-        "id": "258aaa782e9a4c70",
-        "type": "debug",
-        "z": "6e04ada28a2e9f82",
-        "name": "debug 3",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 520,
-        "y": 280,
-        "wires": []
-    },
-    {
-        "id": "93dbae9dad21fda6",
-        "type": "inject",
-        "z": "6e04ada28a2e9f82",
-        "name": "",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "",
-        "payloadType": "date",
-        "x": 330,
-        "y": 340,
-        "wires": [
-            [
-                "b1160216447b9597"
-            ]
-        ]
-    },
-    {
         "id": "2d6791d98b2aace5",
         "type": "mqtt in",
         "z": "6e04ada28a2e9f82",
@@ -294,7 +105,7 @@
         "type": "function",
         "z": "6e04ada28a2e9f82",
         "name": "function 4",
-        "func": "const apiKey = env.get(\"GROQ_API_KEY\")\n\nlet dog = msg.payload;\n\nif (!dog || !dog.heart) {\n    dog = {\n        heart: { bpm: 70 },\n        vision: { detected_object: \"RIEN\" },\n        tail: { frequency_hz: 0, is_stressed: false },\n        bladder: { urgent: false }\n    };\n}\n\nlet contextDescription = `\nÉtat actuel de tes capteurs :\n    ${JSON.stringify(dog)}\n`;\n\n// 3. Configuration du Payload pour l'API (Format Standard OpenAI/Groq)\nmsg.payload = {\n    \"model\": \"llama-3.1-8b-instant\",\n    temperature: 0.7, // Créativité équilibrée\n    max_tokens: 100,  // On veut une pensée courte, pas un roman\n    messages: [\n        {\n            \"role\": \"system\",\n            \"content\": `Tu es un Chien. Tu as un cerveau très simple.\n            \n            TA MISSION : Exprimer ton ressenti IMMÉDIAT basé sur les données de tes capteurs.\n            \n            RÈGLES ABSOLUES :\n            1. INTERDIT d'utiliser le futur ou le conditionnel (pas de \"je vais...\", \"il faudrait...\").\n            2. INTERDIT de proposer une action ou une solution.\n            3. Sois instinctif, utilise des mots-clés, des onomatopées ou des phrases nominales.\n            4. Si tu ne ressens rien de spécial, dis juste \"Ouaf !\" ou \"Wouf !\".\n            5. Si est en train de dormir tu peux répondre \"Zzz\".\n            5. TU PARLES EN FRANCAIS UNIQUEMENT\n\n            EXEMPLES À SUIVRE :\n            - Si vessie pleine -> \"Pipi ! Vite !\" (Pas : \"Je dois trouver un arbre\")\n            - Si soif -> \"Langue sèche... Soif !\" (Pas : \"Je vais chercher de l'eau\")\n            - Si vision Chat -> \"CHAT ! ENNEMI !\" (Pas : \"Je vais le courser\")\n            - Si cœur rapide -> \"BOUM BOUM BOUM !\"\n            \n            Format de réponse : Juste le texte de la pensée. Pas de guillemets.`\n        },\n        {\n            role: \"user\",\n            content: contextDescription\n        }\n    ]\n};\n\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": \"Bearer \" + apiKey\n};\n\nreturn msg;",
+        "func": "const apiKey = env.get(\"API_KEY\");\nconst apiUrl = env.get(\"API_URL\");\nconst aiModel = env.get(\"AI_MODEL\");\n\nif (!apiKey || !apiUrl) {\n    node.error(\"ERREUR CONFIG: API_KEY ou API_URL manquante dans le .env Node-RED\");\n    return null;\n}\n\nlet dog = msg.payload;\n\nif (!dog || !dog.heart) {\n    dog = {\n        heart: { bpm: 70 },\n        vision: { detected_object: \"RIEN\" },\n        tail: { frequency_hz: 0 },\n        bladder: { estimated_fill_pct: 0 },\n        hunger: 0,\n        energy: 100\n    };\n}\n\nlet contextDescription = `\nDonnées brutes de tes capteurs biologiques :\n${JSON.stringify(dog, null, 2)}\n`;\n\nmsg.url = apiUrl;\n\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": \"Bearer \" + apiKey\n};\n\nmsg.payload = {\n    \"model\": aiModel,\n    \"temperature\": 0.7,\n    \"max_tokens\": 60,\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": `Tu es un Chien. Tu as un cerveau très simple.\n            \n            TA MISSION : Exprimer ton ressenti IMMÉDIAT basé sur les données de tes capteurs.\n            \n            RÈGLES ABSOLUES :\n            1. INTERDIT d'utiliser le futur ou le conditionnel (pas de \"je vais...\", \"il faudrait...\").\n            2. INTERDIT de proposer une action ou une solution.\n            3. Sois instinctif, utilise des mots-clés, des onomatopées ou des phrases nominales.\n            4. Si tu ne ressens rien de spécial, dis juste \"Ouaf !\" ou \"Wouf !\".\n            5. Si tu es en train de dormir, réponds simplement \"Zzz...\".\n            6. TU PARLES EN FRANÇAIS UNIQUEMENT.\n\n            EXEMPLES À SUIVRE :\n            - Si Vessie > 80% -> \"Pipi ! Vite !\" (Pas : \"Je dois trouver un arbre\")\n            - Si Faim > 80% -> \"Ventre vide... Faim ! Manger !\" (Pas : \"Je vais chercher ma gamelle\")\n            - Si Vision = CHAT -> \"CHAT ! GRRR ! ENNEMI !\"\n            - Si Vision = MAITRE -> \"MAÎTRE ! AMOUR ! QUEUE QUI BOUGE !\"\n            - Si Cœur > 140 -> \"BOUM BOUM BOUM ! Cœur bat fort !\"\n            \n            Format de réponse : Juste le texte de la pensée. Pas de guillemets.`\n        },\n        {\n            \"role\": \"user\",\n            \"content\": contextDescription\n        }\n    ]\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -343,7 +154,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -483,7 +294,7 @@
         "type": "debug",
         "z": "6e04ada28a2e9f82",
         "name": "debug 7",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -517,7 +328,7 @@
         "type": "debug",
         "z": "6e04ada28a2e9f82",
         "name": "debug 8",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -534,7 +345,7 @@
         "z": "6e04ada28a2e9f82",
         "name": "",
         "props": [],
-        "repeat": "2",
+        "repeat": "5",
         "crontab": "",
         "once": true,
         "onceDelay": 0.1,
