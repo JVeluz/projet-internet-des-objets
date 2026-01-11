@@ -22,4 +22,14 @@ export class SocketClient<T> extends Observable<T> {
         };
         this.socket.onclose = () => setTimeout(() => this.connect(), 3000);
     }
+
+    public send(data: any): void {
+        if (!this.socket) return;
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(data));
+            console.log("📤 [WS] Envoi :", data);
+        } else {
+            console.warn("⚠️ [WS] Socket non connecté, envoi impossible.");
+        }
+    }
 }

@@ -1,28 +1,42 @@
 import { WS_SENSORS_URL } from "../config";
 import { SocketClient } from "../data/SocketClient";
 import { Observable } from "../data/Observable";
-import { SafetyStatus, type SensorData, type SensorPayload } from "../interfaces/sensor";
+import type { DogGlobalState } from "../interfaces/sensor";
 
-export class SensorRepository extends Observable<SensorData> {
+const INITIAL_STATE: DogGlobalState = {
+    heart: { bpm: 0, temperature_c: 0, alert_tachycardia: false, alert_fever: false },
+    bladder: { pressure_pa: 0, estimated_fill_pct: 0, urgent: false },
+    tail: { frequency_hz: 0, axis_data: { x: 0, y: 0, z: 0 } },
+    vision: { detected_object: "WAITING..." }
+};
 
-    private socket = new SocketClient<SensorPayload>(WS_SENSORS_URL);
+export class SensorRepository extends Observable<DogGlobalState> {
 
-    private state: SensorData = {
-        status: SafetyStatus.NORMAL,
-        metrics: { stress: 0, heart_rate: 0, battery: 0 },
-        deviceId: "---"
-    };
+    private socket = new SocketClient<DogGlobalState>(WS_SENSORS_URL);
+
+    private state: DogGlobalState = INITIAL_STATE;
 
     constructor() {
         super();
+
         this.socket.subscribe((payload) => {
-            this.state.deviceId = payload.deviceId;
-            this.state.timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
-            if (payload.metrics) {
-                this.state.metrics = payload.metrics;
-            }
-            this.state.status = payload.status || SafetyStatus.NORMAL;
-            this.notify({ ...this.state });
+            console.log(payload);
+            this.state = { ...this.state, ...payload };
+            this.notify(this.state);
         });
+    }
+
+    public calibrateSensor(sensorId: string, settings: Record<string, number>) {
+        const payload = {
+            type: 'CALIBRATION',
+            sensor_id: sensorId,
+            settings: settings
+        };
+
+        this.socket.send(payload);
+    }
+
+    public getCurrentState(): DogGlobalState {
+        return this.state;
     }
 }

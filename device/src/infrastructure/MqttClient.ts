@@ -1,11 +1,13 @@
 import mqtt from "mqtt";
-import IMqttClient from "../../domain/ports/mqtt/IMqttClient";
+import IMqttClient from "../domain/ports/IMqttClient";
+
 
 export default class MqttClient implements IMqttClient {
     private client;
     private connected: boolean = false;
     private brokerUrl: string;
     private rootTopic: string;
+    private onMessageCallback?: (topic: string, message: any) => void;
 
     /**
      * @param brokerUrl L'URL du broker (ex: "mqtt://test.mosquitto.org")
@@ -33,13 +35,23 @@ export default class MqttClient implements IMqttClient {
                 if (error) {
                     console.error(`❌ [MQTT] Erreur d'envoi sur ${completeTopic}:`, error);
                 }
-                else {
-                    console.log(`🚀 [MQTT] Sent -> ${completeTopic}`);
-                }
+                // else {
+                //     console.log(`🚀 [MQTT] Sent -> ${completeTopic}`);
+                // }
             });
         } catch (error) {
             console.error("❌ [MQTT] Erreur JSON:", error);
         }
+    }
+
+    public subscribe(topic: string): void {
+        const completeTopic: string = this.rootTopic + "/" + topic
+        this.client.subscribe(completeTopic);
+        console.log(`👂 Abonné à : ${completeTopic}`);
+    }
+
+    public onMessage(callback: (topic: string, message: any) => void): void {
+        this.onMessageCallback = callback;
     }
 
     /**
@@ -58,6 +70,17 @@ export default class MqttClient implements IMqttClient {
 
         this.client.on("reconnect", () => {
             console.log("🔄 [MQTT] Tentative de reconnexion...");
+        });
+
+        this.client.on("message", (topic: string, message: any) => {
+            if (this.onMessageCallback) {
+                try {
+                    const payload = JSON.parse(message.toString());
+                    this.onMessageCallback(topic, payload);
+                } catch (e) {
+                    console.error("JSON Error", e);
+                }
+            }
         });
     }
 }

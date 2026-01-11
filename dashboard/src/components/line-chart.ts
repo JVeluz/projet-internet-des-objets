@@ -11,6 +11,11 @@ export class LineChart extends LitElement {
     @property({ type: Number }) value = 0;
     @property({ type: String }) label = "";
 
+    // --- NOUVELLES PROPRIÉTÉS ---
+    // Optionnelles (undefined par défaut) pour laisser Chart.js gérer si non fournies
+    @property({ type: Number }) min?: number;
+    @property({ type: Number }) max?: number;
+
     @query('canvas') private canvasElement!: HTMLCanvasElement;
 
     private chart: Chart | null = null;
@@ -31,8 +36,14 @@ export class LineChart extends LitElement {
     }
 
     protected updated(changedProperties: PropertyValues) {
+        // 1. Mise à jour des DONNÉES (Ajout de point)
         if ((changedProperties.has('value') || changedProperties.has('label')) && this.chart) {
             this.addDataPoint(this.label, this.value);
+        }
+
+        // 2. Mise à jour de la CONFIGURATION (Min/Max/Couleur dynamiques)
+        if (this.chart && (changedProperties.has('min') || changedProperties.has('max') || changedProperties.has('color'))) {
+            this.updateChartConfig();
         }
     }
 
@@ -54,14 +65,41 @@ export class LineChart extends LitElement {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: {
-                    duration: 800, // Durée en ms (0.8 seconde pour la transition)
-                    easing: 'easeOutQuart' // Effet de lissage (démarre vite, finit doucement)
+                    duration: 800,
+                    easing: 'easeOutQuart'
                 },
                 scales: {
-                    y: { beginAtZero: true }
+                    y: {
+                        // Si min n'est pas défini, on commence à 0 par défaut, sinon on respecte le min
+                        beginAtZero: this.min === undefined,
+                        min: this.min, // Injection du min
+                        max: this.max  // Injection du max
+                    }
                 }
             }
         });
+    }
+
+    /**
+     * Met à jour les axes et couleurs sans recréer tout le graphique
+     */
+    private updateChartConfig() {
+        if (!this.chart) return;
+
+        // Mise à jour des échelles
+        if (this.chart.options.scales?.y) {
+            this.chart.options.scales.y.min = this.min;
+            this.chart.options.scales.y.max = this.max;
+        }
+
+        // Mise à jour des couleurs
+        const dataset = this.chart.data.datasets[0];
+        if (dataset) {
+            dataset.borderColor = this.color;
+            dataset.backgroundColor = this.color.replace('rgb', 'rgba').replace(')', ', 0.2)');
+        }
+
+        this.chart.update();
     }
 
     private addDataPoint(label: string, data: number) {
@@ -75,6 +113,6 @@ export class LineChart extends LitElement {
             this.dataBuffer.shift();
         }
 
-        this.chart.update('none');
+        this.chart.update('none'); // Mode 'none' pour performance (pas d'anim sur l'ajout de point)
     }
 }

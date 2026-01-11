@@ -1,33 +1,27 @@
-import { DogPosture, TailState } from "../enums";
 import SimulationState from "../models/SimulationState";
-import IAction, { clamp } from "./IAction";
+import IAction, { clamp } from "../interfaces/IAction";
 
 export class SleepAction implements IAction {
     name = "Dormir";
 
     calculateUtility(state: SimulationState): number {
-        const fatigue = 1.0 - state.energyLevel;
-
-        // Si on dort déjà, on a tendance à vouloir continuer (hystérésis)
-        const inertia = state.currentPosture === DogPosture.SLEEPING ? 0.2 : 0.0;
-
-        // Bonus s'il fait nuit
-        const nightBonus = state.isNightTime ? 0.3 : 0.0;
-
-        return clamp(fatigue + inertia + nightBonus, 0, 1);
+        const fatigue = 1.0 - (state.energy / 100);
+        if (state.is_sleeping)
+            return 1.0
+        return Math.pow(fatigue, 3);
     }
 
     execute(state: SimulationState): void {
         console.log("💤 Zzzzz...");
-        state.currentPosture = DogPosture.SLEEPING;
-        state.tailState = TailState.RELAXED_DOWN;
 
-        state.energyLevel = clamp(state.energyLevel + 0.1, 0, 1);
-        state.currentHeartRate = 50; // Cardio au repos
-        state.stressLevel = clamp(state.stressLevel - 0.1, 0, 1); // Dormir calme
+        state.energy = clamp(state.energy + 5, 0, 100);
 
-        // Le métabolisme continue
-        state.bladderFillLevel += 0.02;
-        state.satietyLevel -= 0.01;
+        state.bladder = clamp(state.bladder + 2, 0, 100);
+        state.hunger = clamp(state.hunger + 1, 0, 100);
+
+        state.currentHeartBeat = 50;
+
+        state.is_sleeping = true;
+        state.lastSleepTimestamp = Date.now();
     }
 }

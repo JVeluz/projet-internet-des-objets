@@ -1,12 +1,12 @@
-import IAction from "./domain/actions/IAction";
-import IEvent from "./domain/events/IEvent";
-import { DogSimulator } from "./domain/logic/DogSimulator";
+import { loadInstances } from "./utils/Loader";
+import IAction from "./domain/interfaces/IAction";
+import IEvent from "./domain/interfaces/IEvent";
+import ISensor from "./domain/interfaces/ISensor";
+import Simulation from "./domain/logic/Simulation";
 import UtilityBrain from "./domain/logic/UtilityBrain";
-import ISensor from "./domain/sensors/ISensor";
-import MqttClient from "./infrastructure/mqtt/mqttClient";
-import { loadInstances } from "./loader";
+import MqttClient from "./infrastructure/MqttClient";
 
-const CLOCK = 5000; // 5 secondes par cycle de simulation
+const CLOCK: number = 2000;
 
 async function main() {
     console.clear();
@@ -18,18 +18,15 @@ async function main() {
         loadInstances<ISensor>('domain/sensors')
     ]);
 
+    const mqttClient = new MqttClient("uppa/jveluz");
     const dogBrain = new UtilityBrain(dogActions);
-
-    const mqttClient = new MqttClient("UPPA/jveluz");
-
-    const cyberDog = new DogSimulator(dogBrain, dogSensors, worldEvents, mqttClient);
+    const simulation = new Simulation(dogBrain, dogSensors, worldEvents, mqttClient);
 
     console.log(`⏱️  Horloge réglée sur ${CLOCK}ms. Lancement de la boucle...`);
     console.log("---------------------------------------------------------------");
 
-    cyberDog.tick();
-
-    setInterval(() => cyberDog.tick(), CLOCK);
+    simulation.tick();
+    setInterval(() => simulation.tick(), CLOCK);
 }
 
-main().catch(console.error);
+main().catch(console.error); 
